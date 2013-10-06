@@ -1,5 +1,10 @@
 class MoviesController < ApplicationController
-
+  def initialize()
+    @all_ratings = Movie.all_ratings
+    @checked_boxes = Hash.new(true)
+    super
+  end
+  
   def show
     id = params[:id] # retrieve movie ID from URI route
     @movie = Movie.find(id) # look up movie by unique ID
@@ -7,18 +12,28 @@ class MoviesController < ApplicationController
   end
 
   def index
-    if (params[:sort] == "title")
-      @movies = Movie.order("title").all
+    if (params[:sort] == 'title')
+      @movies = Movie.find(:all, :order => 'title')
       @title_header_class = 'hilite'
       @release_date_header_class = ''
     elsif (params[:sort] == 'release_date')
-      @movies = Movie.order("release_date").all
+      @movies = Movie.find(:all, :order => 'release_date')
       @release_date_header_class = 'hilite'
       @title_header_class = ''
     else
       @movies = Movie.all
       @title_header_class = ''
       @release_date_header_class = ''
+    end
+    if (params[:commit] == 'Refresh')
+      @movies = Movie.find(:all, :conditions => ["rating IN (?)", params[:ratings].keys])
+      @all_ratings.each do |rating|
+        if params[:ratings]
+          @checked_boxes[rating] = params[:ratings].include?(rating)
+        else
+          @checked_boxes[rating] = false
+        end
+      end
     end
   end
 
