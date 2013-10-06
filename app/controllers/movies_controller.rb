@@ -12,28 +12,39 @@ class MoviesController < ApplicationController
   end
 
   def index
-    if (params[:sort] == 'title')
-      @movies = Movie.find(:all, :order => 'title')
+    if !session[:ratings]
+      session[:ratings] = Hash.new(true)
+      @all_ratings.each do |rating|
+        session[:ratings][rating] = '1'
+      end
+    end
+    if params[:ratings]
+        session[:ratings] = params[:ratings]
+    end
+    if params[:sort]
+      session[:sort] = params[:sort]
+    end
+    if (!params[:sort] and session[:sort]) or !params[:ratings]
+      if flash[:notice]
+        flash.keep
+      end
+      redirect_to(movies_path({:sort => session[:sort], :ratings => session[:ratings]}))
+    end
+    if (session[:sort] == 'title')
+      @movies = Movie.find(:all, :conditions => ["rating in (?)", session[:ratings].keys], :order => 'title')
       @title_header_class = 'hilite'
       @release_date_header_class = ''
-    elsif (params[:sort] == 'release_date')
-      @movies = Movie.find(:all, :order => 'release_date')
+    elsif (session[:sort] == 'release_date')
+      @movies = Movie.find(:all, :conditions => ["rating in (?)", session[:ratings].keys], :order => 'release_date')
       @release_date_header_class = 'hilite'
       @title_header_class = ''
     else
-      @movies = Movie.all
+      @movies = Movie.find(:all, :conditions => ["rating in (?)", session[:ratings].keys])
       @title_header_class = ''
       @release_date_header_class = ''
     end
-    if (params[:commit] == 'Refresh')
-      @movies = Movie.find(:all, :conditions => ["rating IN (?)", params[:ratings].keys])
-      @all_ratings.each do |rating|
-        if params[:ratings]
-          @checked_boxes[rating] = params[:ratings].include?(rating)
-        else
-          @checked_boxes[rating] = false
-        end
-      end
+    @all_ratings.each do |rating|
+      @checked_boxes[rating] = session[:ratings].include?(rating)
     end
   end
 
